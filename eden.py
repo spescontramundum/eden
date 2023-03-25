@@ -23,8 +23,8 @@ def quad_set(i,j):
 def create_base(n):
     M = {}
 
-    for i in range(n):
-        for j in range(n):
+    for i in range(n+1):
+        for j in range(n+1):
             for k in quad_set(i, j):
                 M[k] = 0
     return M
@@ -110,14 +110,14 @@ def RunModel(n):
 
 
 
-def find_edges(n):
-    M = RunModel(n)
+def find_edges(M,n):
+
     interior = {}
     edge_set = {}
 
-    for i in range(n):
-        for j in range(n):
-            for k in [(i,j),(-i, j),(-i, -j), (i, -j)]:
+    for i in range(n+1):
+        for j in range(n+1):
+            for k in quad_set(i,j):
                 p = M[k]
                 a = list(k)[0]
                 b = list(k)[1]
@@ -135,7 +135,6 @@ def find_edges(n):
 
 
 
-A, B = find_edges(14)
 
 
 
@@ -149,42 +148,47 @@ def check_rin(C):
 
 def circle_set(M, r):
     C = {}
-    for i in range(int(r) +1):
-        for j in range(int(r) +1):
+    for i in range(int(r) + 1):
+        for j in range(int(r) + 1):
             for k in quad_set(i,j):
                 a = list(k)[0]
                 b = list(k)[1]
                 if a**2 + b**2 <= r**2:
-                    try:
-                        C[k] = M[k]
-                    except:
-                        pass
+                    C[k] = M[k]
+
+
     return C
 
 
 def Rin(M,n, precision):
     '''calculates inner radius'''
     r = n
-    r_old = None
+    r_list = []
     for i in range(1, precision):
+
         C = circle_set(M, r)
-        r_old = r
+        r_list.append(r)
+
         if check_rin(C) == True:
             # if it includes only Eden set points try a bigger radius
-            r = (r + n / (2** i))
+            r = (r + n / (2 ** i))
         else:
             # if the circle contains points not in the Eden set try a smaller one
             r = (r - n / (2 ** i))
+    print(C)
+    print(r_list)
+    for j in range(1, precision):
+        if check_rin(circle_set(M, r_list[-j])) == True:
+            return r_list[-j]
 
-    if check_rin(circle_set(M, r)) == False:
-        return r_old
-    else:
-        return r
 
 
 
-M = RunModel(14)
-r_in = Rin(M, 14, 8)
+M = RunModel(24)
+
+A, B = find_edges(M,24)
+r_in = Rin(M, 24, 6)
+
 if __name__=="__main__":
 
     Ex = []
