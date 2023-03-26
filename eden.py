@@ -22,7 +22,7 @@ def quad_set(i,j):
 #create a dictionary to store the values of points
 def create_base(n):
     M = {}
-    bounds = int(np.sqrt(2)*n) + 1
+    bounds = 4*n #int(np.sqrt(2)* n) + 10
     for i in range(bounds):
         for j in range(bounds):
             for k in quad_set(i, j):
@@ -86,17 +86,18 @@ def UpdatePoint(point_list):
     return 0
 
 def UpdateModel(M,n):
-
-    for i in range(n):
-        for j in range(n):
+    bounds = 3*n #int(np.sqrt(2)* n + 1)
+    M_new = M
+    for i in range(bounds):
+        for j in range(bounds):
             for k in quad_set(i,j):
                 p = M[k]
                 a = list(k)[0]
                 b = list(k)[1]
                 if p == 0:
-                    M[k] = UpdatePoint(list(NearPoint(a,b, M)))
+                    M_new[k] = UpdatePoint(list(NearPoint(a,b, M)))
 
-    return M
+    return M_new
 
 
 def RunModel(n):
@@ -114,9 +115,9 @@ def find_edges(M,n):
 
     interior = {}
     edge_set = {}
-
-    for i in range(n+1):
-        for j in range(n+1):
+    bounds = 3*n #int(np.sqrt(2) * n) + 1
+    for i in range(bounds):
+        for j in range(bounds):
             for k in quad_set(i,j):
                 p = M[k]
                 a = list(k)[0]
@@ -140,8 +141,8 @@ def check_rin(C):
 
 def circle_set(M, r):
     C = {}
-    for i in range(int(np.sqrt(2)*n)):
-        for j in range(int(np.sqrt(2)*n)):
+    for i in range(int(np.sqrt(2)*r)+1):
+        for j in range(int(np.sqrt(2)*r)+1):
             for k in quad_set(i,j):
                 a = list(k)[0]
                 b = list(k)[1]
@@ -153,9 +154,9 @@ def circle_set(M, r):
     return C
 
 
-def Rin(M, n, precision):
+def Rin(M, n, precision=6):
     '''calculates inner radius'''
-    R = int(np.sqrt(2)*n * 1)
+    R = int(np.sqrt(2)*n + 1)
     r = R
     r_list = []
     for i in range(1, precision):
@@ -175,12 +176,12 @@ def Rin(M, n, precision):
             return r_list[-j]
 
 
-def Rout(M, n, precision):
+def Rout(M, n, precision=5):
     '''calculates inner radius'''
     #set starting radius
-    R = int(np.sqrt(2)*n * 1)
+    R = int(np.sqrt(2)*n + 1)
     m = np.sum(list(M.values()))
-    print(m)
+
     r_list = [R]
     includes = False
 
@@ -193,7 +194,7 @@ def Rout(M, n, precision):
         for c in C:
             if C[c] == 1:
                 count += 1
-        print(count)
+
         if count == m:
             # if the circle does not contain all the points try a larger one
             r = (r - (R / (2 ** i)))
@@ -205,31 +206,59 @@ def Rout(M, n, precision):
             r_list.append(r)
             includes = False
 
-    print(r_list)
     if includes == False:
         return r_list[-1]
     else:
         return r
 
 
-# def estimate_r(trials = 50):
-#
-#     n = 36
-#     r_ins = []
-#     r_outs = []
-#     for i in range(trials):
-#         M = RunModel(n)
-#         r_ins.append(Rin(M, n, precision=10))
-#         r_outs.append(Rout(M, n, precision=6))
-#     rin_avg = np.sum(r_ins)/trials
-#     rout_avg = np.sum(r_outs)/trials
-#     print(rin_avg,rout_avg)
+def estimate_r(n, trials = 10):
+
+    r_ins = []
+    r_outs = []
+    for i in range(trials):
+        M = RunModel(n)
+        r_ins.append(Rin(M, n, precision=12))
+        r_outs.append(Rout(M, n, precision=12))
+    rin_avg = np.sum(r_ins)/trials
+    rout_avg = np.sum(r_outs)/trials
+    return rin_avg,rout_avg
 
 
+def plot_radii(n,r_ins, r_outs):
 
-if __name__=="__main__":
+    plt.plot(range(n), r_ins, color='light')
+    plt.plot(range(n), r_outs, color='red')
+    plt.title("In-radii(b) and out-radii(r) as a function of growth epochs")
+    plt.figure(figsize=(20, 20))
+    plt.show()
 
-    n = 36
+    #print("The estimate for the  in-radius of a model with ", n, " steps is: ", rin_avg )
+
+def plot_eccent(n, E_t):
+    plt.plot(range(n), E_t, color='purple')
+    plt.title("In-radii(b) and out-radii(r) as a function of growth epochs")
+    plt.figure(figsize=(20, 20))
+    plt.show()
+
+def long_term(n):
+    r_ins = []
+    r_outs = []
+
+    for i in range(n):
+        est = list(estimate_r(n))
+        r_ins.append(est[0])
+        r_outs.append(est[1])
+
+    plot_radii(n, r_ins,r_outs)
+
+    E_t = []
+    for i in range(n):
+        E_t.append(r_ins[i]/r_outs[i])
+    plot_eccent(n,E_t)
+
+
+def plot_Model(n):
 
     M = RunModel(n)
     A, B = find_edges(M, n)
@@ -260,15 +289,15 @@ if __name__=="__main__":
     # cgx = np.sum(Ex)/mass
     # cgy = np.sum(Ey)/mass
 
-    r_in = Rin(M, n, precision=6)
-    r_out = Rout(M, n, precision=6)
-#    print(estimate_r())
+    r_in = Rin(M, n, precision=12)
+    r_out = Rout(M, n, precision=12)
+
 
 
 
     plt.scatter(Ex,Ey, s=.5, c='red')
     plt.scatter(Ix,Iy, s=.5, c='blue')
-    c_in = plt.Circle((0,0), radius=r_in, edgecolor="blue", fill=False)
+    c_in = plt.Circle((0,0), radius=r_in, edgecolor="midnightblue", fill=False)
     c_out = plt.Circle((0, 0), radius=r_out, edgecolor="red", fill=False)
     fig = plt.gcf()
     ax = fig.gca()
@@ -279,5 +308,9 @@ if __name__=="__main__":
     plt.title("Eden Growth Model")
     plt.figure(figsize=(20, 20))
     plt.show()
+
+if __name__=="__main__":
+    plot_Model(14)
+    #long_term(25)
 
 
