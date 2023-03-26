@@ -155,7 +155,8 @@ def circle_set(M, r):
 
 def Rin(M, n, precision):
     '''calculates inner radius'''
-    r = n
+    R = int(np.sqrt(2)*n * 1)
+    r = R
     r_list = []
     for i in range(1, precision):
 
@@ -164,10 +165,10 @@ def Rin(M, n, precision):
 
         if check_rin(C) == True:
             # if it includes only Eden set points try a bigger radius
-            r = (r + n / (2 ** i))
+            r = (r + R / (2 ** i))
         else:
             # if the circle contains points not in the Eden set try a smaller one
-            r = (r - n / (2 ** i))
+            r = (r - R / (2 ** i))
 
     for j in range(1, precision):
         if check_rin(circle_set(M, r_list[-j])) == True:
@@ -176,31 +177,53 @@ def Rin(M, n, precision):
 
 def Rout(M, n, precision):
     '''calculates inner radius'''
-    r = n
+    #set starting radius
+    R = int(np.sqrt(2)*n * 1)
     m = np.sum(list(M.values()))
-    r_list = []
+    print(m)
+    r_list = [R]
     includes = False
+
+
     for i in range(1, precision):
-        r_list.append(r)
+        r = r_list[-1]
         C = circle_set(M, r)
+
         count = 0
         for c in C:
             if C[c] == 1:
                 count += 1
-
-        if count < m:
+        print(count)
+        if count == m:
             # if the circle does not contain all the points try a larger one
-            r = (r + n / (2 ** i))
-            includes = False
-        else:
-            r = (r - n / (2 ** i))
+            r = (r - (R / (2 ** i)))
+            r_list.append(r)
             includes = True
 
-        if includes == False:
-            return r_list[-1]
         else:
-            return r
+            r = (r + (R / (2 ** i)))
+            r_list.append(r)
+            includes = False
 
+    print(r_list)
+    if includes == False:
+        return r_list[-1]
+    else:
+        return r
+
+
+# def estimate_r(trials = 50):
+#
+#     n = 36
+#     r_ins = []
+#     r_outs = []
+#     for i in range(trials):
+#         M = RunModel(n)
+#         r_ins.append(Rin(M, n, precision=10))
+#         r_outs.append(Rout(M, n, precision=6))
+#     rin_avg = np.sum(r_ins)/trials
+#     rout_avg = np.sum(r_outs)/trials
+#     print(rin_avg,rout_avg)
 
 
 
@@ -239,7 +262,7 @@ if __name__=="__main__":
 
     r_in = Rin(M, n, precision=6)
     r_out = Rout(M, n, precision=6)
-
+#    print(estimate_r())
 
 
 
