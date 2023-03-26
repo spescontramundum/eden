@@ -12,7 +12,7 @@ from matplotlib import patches
 # # This instantiation defines the frontier to be any point in the set with a
 # # nearest neighbor not in the set.
 
-prob = .2
+prob = .1
 
 #generates points in each quadrant
 def quad_set(i,j):
@@ -22,9 +22,9 @@ def quad_set(i,j):
 #create a dictionary to store the values of points
 def create_base(n):
     M = {}
-
-    for i in range(n+1):
-        for j in range(n+1):
+    bounds = int(np.sqrt(2)*n) + 1
+    for i in range(bounds):
+        for j in range(bounds):
             for k in quad_set(i, j):
                 M[k] = 0
     return M
@@ -131,14 +131,6 @@ def find_edges(M,n):
     return edge_set, interior
 
 
-
-
-
-
-
-
-
-
 def check_rin(C):
     ''' checks within a circle, returns False if there are any points not belonging to the Eden set'''
     for c in C:
@@ -148,11 +140,12 @@ def check_rin(C):
 
 def circle_set(M, r):
     C = {}
-    for i in range(int(r) + 1):
-        for j in range(int(r) + 1):
+    for i in range(int(np.sqrt(2)*n)):
+        for j in range(int(np.sqrt(2)*n)):
             for k in quad_set(i,j):
                 a = list(k)[0]
                 b = list(k)[1]
+                #if (a - cg[0])**2 + (b - cg[1])**2 <= r**2:
                 if a**2 + b**2 <= r**2:
                     C[k] = M[k]
 
@@ -160,7 +153,7 @@ def circle_set(M, r):
     return C
 
 
-def Rin(M,n, precision):
+def Rin(M, n, precision):
     '''calculates inner radius'''
     r = n
     r_list = []
@@ -175,21 +168,49 @@ def Rin(M,n, precision):
         else:
             # if the circle contains points not in the Eden set try a smaller one
             r = (r - n / (2 ** i))
-    print(C)
-    print(r_list)
+
     for j in range(1, precision):
         if check_rin(circle_set(M, r_list[-j])) == True:
             return r_list[-j]
 
 
+def Rout(M, n, precision):
+    '''calculates inner radius'''
+    r = n
+    m = np.sum(list(M.values()))
+    r_list = []
+    includes = False
+    for i in range(1, precision):
+        r_list.append(r)
+        C = circle_set(M, r)
+        count = 0
+        for c in C:
+            if C[c] == 1:
+                count += 1
+
+        if count < m:
+            # if the circle does not contain all the points try a larger one
+            r = (r + n / (2 ** i))
+            includes = False
+        else:
+            r = (r - n / (2 ** i))
+            includes = True
+
+        if includes == False:
+            return r_list[-1]
+        else:
+            return r
 
 
-M = RunModel(24)
 
-A, B = find_edges(M,24)
-r_in = Rin(M, 24, 6)
 
 if __name__=="__main__":
+
+    n = 36
+
+    M = RunModel(n)
+    A, B = find_edges(M, n)
+
 
     Ex = []
     Ey = []
@@ -209,17 +230,29 @@ if __name__=="__main__":
         Ix.append(lb[0])
         Iy.append(lb[1])
 
-    mass = len(Ex)
-    cgx = np.sum(Ex)/mass
-    cgy = np.sum(Ey)/mass
-    print(cgx,cgy)
+    # I don't know whether the center of mass helps, and haven't run the numbers yet
+    # my guess is probably not, but it was the only potential easy fix I could think of
+    # for in radii that left a bunch of stuff out
+    # mass = len(Ex)
+    # cgx = np.sum(Ex)/mass
+    # cgy = np.sum(Ey)/mass
+
+    r_in = Rin(M, n, precision=6)
+    r_out = Rout(M, n, precision=6)
+
+
+
 
     plt.scatter(Ex,Ey, s=.5, c='red')
     plt.scatter(Ix,Iy, s=.5, c='blue')
-    c_in = plt.Circle((0, 0), radius=r_in, edgecolor="blue", fill=False)
+    c_in = plt.Circle((0,0), radius=r_in, edgecolor="blue", fill=False)
+    c_out = plt.Circle((0, 0), radius=r_out, edgecolor="red", fill=False)
     fig = plt.gcf()
     ax = fig.gca()
+    fig2 = plt.gcf()
+    ax2 = fig.gca()
     ax.add_patch(c_in)
+    ax2.add_patch(c_out)
     plt.title("Eden Growth Model")
     plt.figure(figsize=(20, 20))
     plt.show()
